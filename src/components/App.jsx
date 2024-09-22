@@ -50,13 +50,15 @@ const App = () => {
   // when app component mounts, hit the api and fetch both home page products and shop page products
   // dont fetch on demand, as it can cause network waterfall
 
-  const [homePageProducts, setHomePageProducts] = useState();
+  const [homePageProducts, setHomePageProducts] = useState([]);
   const [homePageIsLoading, setHomePageIsLoading] = useState(true);
   const [homePageError, setHomePageError] = useState(false);
 
-  const [shopPageProducts, setShopPageProducts] = useState();
+  const [shopPageProducts, setShopPageProducts] = useState([]);
   const [shopPageIsLoading, setShopPageIsLoading] = useState(true);
   const [shopPageError, setShopPageError] = useState(false);
+
+  const [order, setOrder] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,13 +75,34 @@ const App = () => {
       setHomePageIsLoading(false);
       setHomePageError(false);
 
-      setShopPageProducts(shopPageData);
+      setShopPageProducts(shopPageData.map((product) => ({ ...product, quantityOrdered: 0 })));
       setShopPageIsLoading(false);
       setShopPageError(false);
     };
 
     fetchData();
   }, []);
+
+  const handleOrderChange = (id, newQuantity) => {
+    setShopPageProducts((prevProducts) => (
+      prevProducts.map((product) => product.id === id ? {...product, quantityOrdered: newQuantity} : product)
+    ));
+
+    setOrder((prevOrder) => {
+      const orderContainsProduct = prevOrder.some((product) => product.id === id);
+      let newOrder;
+
+      if (orderContainsProduct) {
+        newOrder = prevOrder.map((product) => product.id === id ? { ...product, quantityOrdered: newQuantity } : product);
+        newOrder = newOrder.filter((product) => product.quantityOrdered > 0);
+      } else {
+        const newProduct = shopPageProducts.find((product) => product.id === id);
+        newOrder = [...prevOrder, { ...newProduct, quantityOrdered: newQuantity }];
+      }
+
+      return newOrder;
+    });
+  };
 
   const homePageProps = {
     homePageProducts,
@@ -91,6 +114,7 @@ const App = () => {
     shopPageProducts,
     shopPageIsLoading,
     shopPageError,
+    handleOrderChange,
   };
 
   return (
@@ -105,7 +129,7 @@ const App = () => {
               <NavLink to="/shop">Shop</NavLink>
             </NavItem>
             <NavItem>
-              <NavLink to="/cart">Cart</NavLink>
+              <NavLink to="/cart">Cart [{order.length}]</NavLink>
             </NavItem>
             <NavItem>
               <NavLink to="/checkout">Checkout</NavLink>
@@ -117,7 +141,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Home {...homePageProps} />} />
             <Route path="/shop" element={<Shop {...shopPageProps} />} />
-            <Route path="/cart" element={<Cart />} />
+            <Route path="/cart" element={<Cart order={order} />} />
             <Route path="/checkout" element={<Checkout />} />
           </Routes>
         </MainContent>
