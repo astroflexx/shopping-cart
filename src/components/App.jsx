@@ -5,7 +5,7 @@ import Home from "./Home";
 import Shop from "./Shop";
 import Cart from "./Cart";
 import Checkout from "./Checkout";
-
+import { useEffect, useState } from "react";
 
 const NavBar = styled.nav`
   background-color: #2c3e50;
@@ -42,9 +42,57 @@ const AppContainer = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: black;
+  color: white;
 `;
 
 const App = () => {
+  // when app component mounts, hit the api and fetch both home page products and shop page products
+  // dont fetch on demand, as it can cause network waterfall
+
+  const [homePageProducts, setHomePageProducts] = useState();
+  const [homePageIsLoading, setHomePageIsLoading] = useState(true);
+  const [homePageError, setHomePageError] = useState(false);
+
+  const [shopPageProducts, setShopPageProducts] = useState();
+  const [shopPageIsLoading, setShopPageIsLoading] = useState(true);
+  const [shopPageError, setShopPageError] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [homePageData, shopPageData] = await Promise.all([
+        fetch("https://fakestoreapi.com/products?limit=3", { mode: "cors" }).then((res) =>
+          res.json()
+        ),
+        fetch("https://fakestoreapi.com/products?limit=12", { mode: "cors" }).then((res) =>
+          res.json()
+        ),
+      ]);
+
+      setHomePageProducts(homePageData);
+      setHomePageIsLoading(false);
+      setHomePageError(false);
+
+      setShopPageProducts(shopPageData);
+      setShopPageIsLoading(false);
+      setShopPageError(false);
+    };
+
+    fetchData();
+  }, []);
+
+  const homePageProps = {
+    homePageProducts,
+    homePageIsLoading,
+    homePageError,
+  };
+
+  const shopPageProps = {
+    shopPageProducts,
+    shopPageIsLoading,
+    shopPageError,
+  };
+
   return (
     <Router>
       <AppContainer>
@@ -67,8 +115,8 @@ const App = () => {
 
         <MainContent>
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/shop" element={<Shop />} />
+            <Route path="/" element={<Home {...homePageProps} />} />
+            <Route path="/shop" element={<Shop {...shopPageProps} />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
           </Routes>
