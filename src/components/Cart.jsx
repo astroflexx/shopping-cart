@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
@@ -66,10 +68,9 @@ const FinalBill = styled.div`
 `;
 
 const Cart = ({ order }) => {
-  console.log(order);
-  const totalBill = order.reduce((total, product) => {
-    return total + product.price * product.quantityOrdered;
-  }, 0);
+  const totalBill = useMemo(() => {
+    return order.reduce((total, product) => total + product.price * product.quantityOrdered, 0);
+  }, [order]);
 
   if (order.length === 0) return <div>Your cart is empty! Check out the products in our shop.</div>
 
